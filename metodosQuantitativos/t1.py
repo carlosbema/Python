@@ -1,60 +1,50 @@
 from pyomo.environ import *
 
-# Capacidade do caminhão
-W = 40  # Capacidade máxima de peso (em toneladas)
-V_max = 50  # Capacidade máxima de volume (em metros cúbicos)
+P = 200  # Peso máximo (toneladas)
+V_max = 250  # Volume máximo (m³)
 
-# Conjunto de grãos
-grains = ['Milho', 'Soja', 'Feijão']
+graos = ['Milho', 'Soja', 'Feijão']
 
-# Parâmetros para cada grão
-rho = {'Milho': 0.75,  # Densidade (t/m³)
-       'Soja': 0.70,
-       'Feijão': 0.80}
+densidade = {'Milho': 0.72,
+       'Soja': 0.76,
+       'Feijão': 0.7}
 
-v_max = {'Milho': 30,  # Volume máximo permitido pela legislação (m³)
-         'Soja': 25,
-         'Feijão': 20}
+v_max = {'Milho': 100, 
+         'Soja': 80,
+         'Feijão': 90}
 
-r = {'Milho': 200,  # Receita por metro cúbico ($/m³)
+r = {'Milho': 200,  
      'Soja': 250,
-     'Feijão': 300}
+     'Feijão': 180}
 
-# Criando o modelo
 model = ConcreteModel()
+model.x = Var(graos, domain=NonNegativeReals)
 
-# Definindo as variáveis de decisão
-model.x = Var(grains, domain=NonNegativeReals)
+# Função objetivo
+def func_objetivo(model):
+    return sum(r[i] * model.x[i] for i in graos)
 
-# Função objetivo: maximizar a receita total
-def objective_rule(model):
-    return sum(r[i] * model.x[i] for i in grains)
-model.profit = Objective(rule=objective_rule, sense=maximize)
+model.obj = Objective(rule=func_objetivo, sense=maximize)
 
-# Restrição de capacidade de peso
-def weight_constraint_rule(model):
-    return sum(rho[i] * model.x[i] for i in grains) <= W
-model.weight_constraint = Constraint(rule=weight_constraint_rule)
+# Restrições
+def restricao_peso(model):
+    return sum(densidade[i] * model.x[i] for i in graos) <= P
 
-# Restrição de capacidade de volume
-def volume_constraint_rule(model):
-    return sum(model.x[i] for i in grains) <= V_max
-model.volume_constraint = Constraint(rule=volume_constraint_rule)
+def restricao_volume(model):
+    return sum(model.x[i] for i in graos) <= V_max
 
-# Restrições legislativas de volume máximo por grão
-def legislative_constraints_rule(model, i):
+def restricao_legislacao(model, i):
     return model.x[i] <= v_max[i]
-model.legislative_constraints = Constraint(grains, rule=legislative_constraints_rule)
 
-# Resolvendo o modelo usando o solver GLPK
-solver = SolverFactory('glpk')
-result = solver.solve(model)
+model.weight_constraint = Constraint(rule=restricao_peso)
+model.volume_constraint = Constraint(rule=restricao_volume)
+model.legislative_constraints = Constraint(graos, rule=restricao_legislacao)
 
-# Exibindo os resultados
-print("Status da Otimização:", result.solver.status)
-print("Condição de Término:", result.solver.termination_condition)
-print("\nValores Ótimos das Variáveis:")
-for i in grains:
+# Solução
+opt = SolverFactory('glpk')
+opt.solve(model).write()
+print("\nSOLUÇÃO ÓTIMA:")
+for i in graos:
     print(f"Quantidade de {i}: {model.x[i]():.2f} m³")
 
-print(f"\nReceita Total: R$ {model.profit():.2f}")
+print(f"\nReceita Total: R$ {model.obj():.2f}")
