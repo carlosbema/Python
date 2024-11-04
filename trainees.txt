@@ -1,0 +1,11 @@
+ID|Projeto|Alergia
+T01|PlanetHeroes|Não
+T02|SMART|Sim
+T03|PlanetHeroes|Sim
+T04|Driblando|Não
+T05|SMART|Sim
+T06|SMART|Não
+T07|PlanetHeroes|Sim
+T08|SMART|Sim
+T09|PlanetHeroes|Não
+T10|Driblando|Não
